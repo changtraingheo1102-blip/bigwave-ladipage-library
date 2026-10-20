@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102e33">
+  <title>Big Wave — Thư viện LadiPage</title>
+  <link rel="stylesheet" href="/bigwave-ladipage-library/library.css">
+  <script src="/bigwave-ladipage-library/library.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="/bigwave-ladipage-library/" aria-label="Trang tổng Big Wave"><span class="brand-mark">bw<span>↗</span></span><span>BIG WAVE<small>THƯ VIỆN LANDING PAGE</small></span></a>
+    <div class="sidebar-heading">KHÔNG GIAN LÀM VIỆC</div>
+    <nav id="navigation" aria-label="Hạng mục dự án"></nav>
+    <div class="sidebar-bottom"><span class="online-dot"></span> Thư viện đang online<small>Yêu thích và ghi chú được lưu trên trình duyệt này.</small></div>
+  </aside>
+  <div class="main-shell">
+    <header class="topbar"><button class="icon-button mobile-menu" id="menuButton" aria-label="Mở danh mục">☰</button><div class="breadcrumb">Không gian Big Wave <span>/</span> <b id="breadcrumb">Tất cả dự án</b></div><div class="top-actions"><button class="quiet-button" id="exportButton">Xuất ghi chú <span>↗</span></button><button class="avatar" id="infoButton" aria-label="Thông tin thư viện">BW</button></div></header>
+    <main id="main">
+      <section class="heading"><div class="eyebrow"><span></span> BỘ SƯU TẬP CỦA BẠN</div><div class="heading-row"><div><h1 id="pageTitle">Tất cả dự án</h1><p id="pageSubtitle">Một nơi để tìm, xem và quản lý các bản LadiPage.</p></div><button class="primary-button" id="archivesButton"><span>↓</span> Tải bộ file gốc</button></div></section>
+      <section class="stats" aria-label="Thống kê thư viện"><div><span class="stat-label">Dự án trong thư viện</span><strong id="projectCount">—</strong><small>Giữ riêng các phiên bản khác nhau</small></div><div><span class="stat-label">Trang web khôi phục</span><strong id="webCount">—</strong><small id="relatedCount">Đang đối chiếu với file gốc</small></div><div><span class="stat-label">Hạng mục</span><strong>08</strong><small>Tìm nhanh theo mục đích sử dụng</small></div><div><span class="stat-label">Gói dữ liệu</span><strong>02<em> / 3 ZIP</em></strong><small>Hai ZIP trùng nhau đã được gộp</small></div></section>
+      <section class="workspace" id="workspace">
+        <div class="tabs-row"><div class="tabs" role="tablist" aria-label="Loại nội dung"><button class="tab active" id="projectsTab" role="tab" aria-selected="true">Dự án <span id="projectsTabCount">199</span></button><button class="tab" id="webTab" role="tab" aria-selected="false">Trang web <span id="webTabCount">126</span></button></div><div class="view-toggle"><button class="icon-button active" id="gridButton" aria-label="Xem dạng thẻ" aria-pressed="true">▦</button><button class="icon-button" id="listButton" aria-label="Xem dạng danh sách" aria-pressed="false">☷</button></div></div>
+        <div class="toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Tìm tên, người, từ khóa hoặc tên file…" aria-label="Tìm dự án"><kbd>/</kbd></label><select id="statusFilter" aria-label="Lọc theo trạng thái"><option value="all">Tất cả trạng thái</option><option value="related">Có bản web liên quan</option><option value="source">Chỉ có file gốc</option><option value="notes">Có ghi chú</option></select><select id="archiveFilter" aria-label="Lọc theo gói ZIP"><option value="all">Tất cả gói ZIP</option><option value="A">Gói A · 100 bản</option><option value="B">Gói B · 99 bản</option></select><select id="sort" aria-label="Sắp xếp"><option value="category">Theo hạng mục</option><option value="name">Tên A → Z</option><option value="favorite">Yêu thích trước</option><option value="size">Dung lượng lớn trước</option></select></div>
+        <div class="results-bar"><span id="resultCount">Đang tải thư viện…</span><button class="text-button" id="resetButton" hidden>Xóa bộ lọc</button><span class="legend"><i></i> Có bản web liên quan <i></i> Chỉ có file gốc</span></div>
+        <div class="catalog-grid" id="catalog" aria-live="polite"></div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+      <section class="archive-panel" id="archivePanel" hidden></section>
+      <footer class="footer"><span>BIG WAVE <span class="footer-dot">•</span> Thư viện LadiPage</span><span>Giữ nguyên bản gốc. Sắp xếp để dễ tìm.</span></footer>
+    </main>
+  </div>
+  <dialog id="detailDialog" aria-labelledby="detailTitle"><div id="detailContent"></div></dialog>
+  <dialog id="infoDialog" aria-labelledby="infoTitle"><button class="close-dialog" data-close="infoDialog" aria-label="Đóng">×</button><div class="dialog-eyebrow">VỀ THƯ VIỆN</div><h2 id="infoTitle">Đủ bản gốc. Rõ trạng thái.</h2><p>Thư viện lưu đủ 199 file dự án từ ba ZIP. Hai ZIP giống hệt nhau được gộp thành một gói để tránh lặp.</p><p>Các file <b>.ladipage</b> đang mã hóa. Bản xem web được khôi phục từ các trang đã xuất bản có liên quan, có thể khác phiên bản file gốc. Bản chưa đối chiếu được vẫn tải file gốc bình thường.</p><p>Yêu thích và ghi chú chỉ lưu trên trình duyệt bạn đang dùng. Dùng <b>Xuất ghi chú</b> để giữ một bản sao; tải lại bằng nút bên dưới.</p><label class="secondary-button import-button">Nhập ghi chú<input type="file" id="importFile" accept="application/json,.json" hidden></label><p class="subtle">Trang chạy trên hosting online, vẫn mở được khi máy tính của bạn tắt.</p></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
