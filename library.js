@@ -2,6 +2,10 @@
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase();
+const foldSearch = value => normalize(value).replace(/[^a-z0-9]+/g,' ').trim();
+const libraryRoot = new URL('.', document.currentScript.src);
+let pageSearchText = {};
+const searchableItems = new Map();
 const storageKey = 'bigwave-ladi-library-v1';
 let saved = {favorites:[],notes:{}};
 try { const s = JSON.parse(localStorage.getItem(storageKey)); if (s && Array.isArray(s.favorites) && s.notes && typeof s.notes === 'object') saved = s; } catch {}
@@ -16,20 +20,36 @@ const persist = () => { try { localStorage.setItem(storageKey,JSON.stringify(sav
 function toast(message) { $('toast').textContent=message; $('toast').hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>$('toast').hidden=true,3300); }
 function downloadJSON(value, name) { const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
 function setLocation() { const p=new URLSearchParams();if(state.tab!=='projects')p.set('tab',state.tab);if(state.category!=='all')p.set('category',state.category);if(state.search)p.set('q',state.search);if(state.status!=='all')p.set('status',state.status);if(state.archive!=='all')p.set('archive',state.archive);history.replaceState(null,'',location.pathname+(p.size?'?'+p.toString():'')); }
-function change(values) { Object.assign(state,values,{page:1});setLocation();render(); }
+function change(values) { if(Object.prototype.hasOwnProperty.call(values,'search'))clearTimeout(searchTimer);Object.assign(state,values,{page:1});setLocation();render(); }
 function renderNavigation() {
   const rows=[{id:'all',label:'Tất cả dự án',count:data.stats.projects},...data.categories.map(c=>({...c,count:data.projects.filter(p=>p.category===c.id).length}))];
   $('navigation').innerHTML=rows.map(c=>`<button class="nav-item ${state.category===c.id?'active':''}" data-category="${esc(c.id)}" ${state.category===c.id?'aria-current="page"':''}><span class="nav-icon">${icons[c.id]}</span>${esc(c.label)}<span class="count">${c.count}</span></button>`).join('')+'<div class="nav-separator"></div>'+[{id:'favorites',label:'Đã yêu thích',count:saved.favorites.length},{id:'archives',label:'Bộ file gốc',count:2}].map(c=>`<button class="nav-item ${state.category===c.id?'active':''}" data-category="${c.id}"><span class="nav-icon">${icons[c.id]}</span>${c.label}<span class="count">${c.count}</span></button>`).join('');
 }
+function buildSearchIndex() {
+  for (const item of [...data.projects,...data.webPages]) {
+    const title=foldSearch([item.displayTitle,item.title,item.webTitle].filter(Boolean).join(' '));
+    const metadata=foldSearch([title,item.id,item.filename,item.base,item.categoryLabel,item.slug,item.version,item.status==='source'?'chỉ có file gốc':'',...(item.groups||[]).map(g=>'gói '+g)].filter(Boolean).join(' '));
+    const content=pageSearchText[item.relatedSlug||item.slug]||'';
+    searchableItems.set(item.id,{title,metadata,all:metadata+' '+content});
+  }
+}
 function visibleItems() {
   let items=state.tab==='projects'?data.projects:data.webPages;
+  const query=foldSearch(state.search),terms=[...new Set(query.split(' ').filter(Boolean))],scores=new Map();
   if(state.category==='favorites')items=items.filter(p=>favorite(p.id));
   else if(state.category!=='all')items=items.filter(p=>p.category===state.category);
-  if(state.search){const q=normalize(state.search);items=items.filter(p=>normalize([p.title,p.webTitle,p.filename,p.base,p.categoryLabel,p.slug,saved.notes[p.id]].filter(Boolean).join(' ')).includes(q));}
+  if(terms.length)items=items.filter(item=>{
+    const indexed=searchableItems.get(item.id),notes=foldSearch(saved.notes[item.id]);
+    const text=indexed.all+' '+notes;
+    if(!terms.every(term=>text.includes(term)))return false;
+    const score=(indexed.title.includes(query)?40:0)+terms.reduce((n,term)=>n+(indexed.title.includes(term)?10:indexed.metadata.includes(term)?4:notes.includes(term)?2:0),0);
+    scores.set(item.id,score);return true;
+  });
   if(state.status==='notes')items=items.filter(p=>String(saved.notes[p.id]||'').trim());
   else if(state.tab==='projects'&&state.status!=='all')items=items.filter(p=>p.status===state.status);
   if(state.tab==='projects'&&state.archive!=='all')items=items.filter(p=>p.groups.includes(state.archive));
   return [...items].sort((a,b)=>{
+    if(state.sort==='category'&&terms.length){const d=scores.get(b.id)-scores.get(a.id);if(d)return d;}
     if(state.sort==='favorite'){const d=Number(favorite(b.id))-Number(favorite(a.id));if(d)return d;}
     if(state.sort==='size'){const d=(b.size||0)-(a.size||0);if(d)return d;}
     if(state.sort==='category'){const d=data.categories.findIndex(c=>c.id===a.category)-data.categories.findIndex(c=>c.id===b.category);if(d)return d;}
@@ -60,14 +80,18 @@ function render() {
   $('pageTitle').textContent=heading;$('breadcrumb').textContent=heading;
   $('pageSubtitle').textContent=archiveView?'Tải các gói dữ liệu đã nhập vào thư viện.':state.tab==='web'?'Các trang web liên quan đã được lưu trên hosting online.':'Một nơi để tìm, xem và quản lý các bản LadiPage.';
   $('workspace').hidden=archiveView;$('archivePanel').hidden=!archiveView;
+  $('keywordSearch').hidden=archiveView;
   $('archivesButton').hidden=archiveView;
   if(archiveView){renderArchives();return;}
   $('projectsTab').classList.toggle('active',state.tab==='projects');$('webTab').classList.toggle('active',state.tab==='web');$('projectsTab').setAttribute('aria-selected',state.tab==='projects');$('webTab').setAttribute('aria-selected',state.tab==='web');
   $('statusFilter').value=state.status;$('archiveFilter').value=state.archive;$('sort').value=state.sort;$('search').value=state.search;$('archiveFilter').disabled=state.tab==='web';
+  $('clearSearch').hidden=!state.search;
+  $('sort').options[0].textContent=foldSearch(state.search)?'Phù hợp nhất':'Theo hạng mục';
+  $('searchSuggestions').querySelectorAll('[data-keyword]').forEach(button=>button.setAttribute('aria-pressed',foldSearch(button.dataset.keyword)===foldSearch(state.search)));
   [...$('statusFilter').options].forEach(o=>{if(['source','related'].includes(o.value))o.disabled=state.tab==='web';});
   $('gridButton').classList.toggle('active',state.view==='grid');$('listButton').classList.toggle('active',state.view==='list');$('gridButton').setAttribute('aria-pressed',state.view==='grid');$('listButton').setAttribute('aria-pressed',state.view==='list');
   const all=visibleItems(),limit=24,total=all.length,pages=Math.max(1,Math.ceil(total/limit));state.page=Math.min(state.page,pages);const start=(state.page-1)*limit;
-  $('resultCount').innerHTML=`<b>${total}</b> ${state.tab==='projects'?'dự án':'trang web'}${total?` <span>·</span> Hiển thị ${start+1}–${Math.min(start+limit,total)}`:''}`;
+  $('resultCount').innerHTML=`<b>${total}</b> ${state.tab==='projects'?'dự án':'trang web'}${state.search?` cho <span class="search-query">“${esc(state.search)}”</span>`:''}${total?` <span>·</span> Hiển thị ${start+1}–${Math.min(start+limit,total)}`:''}`;
   $('resetButton').hidden=state.category==='all'&&!state.search&&state.status==='all'&&state.archive==='all';
   $('catalog').classList.toggle('list',state.view==='list');
   $('catalog').innerHTML=total?all.slice(start,start+limit).map(card).join(''):`<div class="empty-state"><strong>${state.category==='favorites'?'Chưa có mục yêu thích':'Không tìm thấy kết quả'}</strong><p>${state.category==='favorites'?'Nhấn ngôi sao trên một thẻ để lưu vào đây.':'Thử từ khóa khác hoặc xóa bộ lọc.'}</p><button class="secondary-button" data-action="reset">Xem tất cả dự án</button></div>`;
@@ -114,9 +138,12 @@ $('webTab').onclick=()=>change({tab:'web',status:'all',archive:'all'});
 $('gridButton').onclick=()=>{state.view='grid';render();};$('listButton').onclick=()=>{state.view='list';render();};
 $('statusFilter').onchange=e=>change({status:e.target.value});$('archiveFilter').onchange=e=>change({archive:e.target.value});$('sort').onchange=e=>change({sort:e.target.value});
 let searchTimer;$('search').addEventListener('input',e=>{const q=e.target.value;clearTimeout(searchTimer);searchTimer=setTimeout(()=>change({search:q}),180);});
+$('searchForm').addEventListener('submit',event=>{event.preventDefault();clearTimeout(searchTimer);change({search:$('search').value.trim()});$('workspace').scrollIntoView({behavior:'smooth',block:'start'});});
+$('clearSearch').onclick=()=>{clearTimeout(searchTimer);change({search:''});$('search').focus();};
+$('searchSuggestions').onclick=event=>{const button=event.target.closest('[data-keyword]');if(!button)return;clearTimeout(searchTimer);change({search:button.dataset.keyword});};
 $('resetButton').onclick=()=>change({category:'all',search:'',status:'all',archive:'all'});
 $('catalog').addEventListener('click',handleAction);$('detailContent').addEventListener('click',handleAction);
 $('pagination').onclick=e=>{const btn=e.target.closest('[data-page]');if(!btn||btn.disabled)return;state.page=Number(btn.dataset.page);render();$('workspace').scrollIntoView({behavior:'smooth',block:'start'});};
-document.addEventListener('keydown',e=>{if(e.key==='Escape')$('sidebar').classList.remove('open');if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!$('detailDialog').open&&!$('infoDialog').open){e.preventDefault();$('search').focus();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('sidebar').classList.remove('open');if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!$('detailDialog').open&&!$('infoDialog').open){e.preventDefault();if(state.category==='archives')change({category:'all'});$('search').focus();}});
 $('importFile').addEventListener('change',async e=>{try{const file=e.target.files[0];if(!file)return;const value=JSON.parse(await file.text());if(value.app!==storageKey||!Array.isArray(value.favorites)||!value.notes||typeof value.notes!=='object')throw Error();const validIds=new Set([...data.projects,...data.webPages].map(p=>p.id));saved.favorites=[...new Set([...saved.favorites,...value.favorites.filter(id=>validIds.has(id))])];for(const[id,note]of Object.entries(value.notes))if(validIds.has(id)&&typeof note==='string')saved.notes[id]=note.slice(0,10000);persist();render();toast('Đã nhập yêu thích và ghi chú.');}catch{toast('File ghi chú không đúng định dạng.');}e.target.value='';});
-(async()=>{try{const response=await fetch('/bigwave-ladipage-library/catalog.json');if(!response.ok)throw Error();data=await response.json();const validIds=new Set([...data.projects,...data.webPages].map(p=>p.id));saved.favorites=saved.favorites.filter(id=>validIds.has(id));$('projectCount').textContent=data.stats.projects;$('webCount').textContent=data.stats.webPages;$('relatedCount').textContent=data.stats.relatedProjects+' dự án có bản web liên quan';$('projectsTabCount').textContent=data.stats.projects;$('webTabCount').textContent=data.stats.webPages;const p=new URLSearchParams(location.search);if(p.get('tab')==='web')state.tab='web';if([...data.categories.map(c=>c.id),'all','favorites','archives'].includes(p.get('category')))state.category=p.get('category');state.search=p.get('q')||'';if(['related','source','notes'].includes(p.get('status')))state.status=p.get('status');if(['A','B'].includes(p.get('archive')))state.archive=p.get('archive');render();}catch{$('catalog').innerHTML='<div class="empty-state"><strong>Chưa tải được danh mục</strong><p>Hãy tải lại trang sau một lúc.</p><button class="secondary-button" onclick="location.reload()">Tải lại</button></div>';$('resultCount').textContent='Kết nối bị gián đoạn';}})();
+(async()=>{try{const [response,indexResponse]=await Promise.all([fetch('/bigwave-ladipage-library/catalog.json'),fetch(new URL('search-index.json',libraryRoot)).catch(()=>null)]);if(!response.ok)throw Error();data=await response.json();if(indexResponse?.ok)pageSearchText=await indexResponse.json().then(index=>index.pages||{}).catch(()=>({}));buildSearchIndex();const validIds=new Set([...data.projects,...data.webPages].map(p=>p.id));saved.favorites=saved.favorites.filter(id=>validIds.has(id));$('projectCount').textContent=data.stats.projects;$('webCount').textContent=data.stats.webPages;$('relatedCount').textContent=data.stats.relatedProjects+' dự án có bản web liên quan';$('projectsTabCount').textContent=data.stats.projects;$('webTabCount').textContent=data.stats.webPages;const p=new URLSearchParams(location.search);if(p.get('tab')==='web')state.tab='web';if([...data.categories.map(c=>c.id),'all','favorites','archives'].includes(p.get('category')))state.category=p.get('category');state.search=p.get('q')||'';if(['related','source','notes'].includes(p.get('status')))state.status=p.get('status');if(['A','B'].includes(p.get('archive')))state.archive=p.get('archive');render();}catch{$('catalog').innerHTML='<div class="empty-state"><strong>Chưa tải được danh mục</strong><p>Hãy tải lại trang sau một lúc.</p><button class="secondary-button" onclick="location.reload()">Tải lại</button></div>';$('resultCount').textContent='Kết nối bị gián đoạn';}})();

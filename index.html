@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#102e33">
   <title>Big Wave — Thư viện LadiPage</title>
-  <link rel="stylesheet" href="/bigwave-ladipage-library/library.css">
-  <script src="/bigwave-ladipage-library/library.js" defer></script>
+  <link rel="stylesheet" href="/bigwave-ladipage-library/library.css?v=keyword-search-1">
+  <script src="/bigwave-ladipage-library/library.js?v=keyword-search-1" defer></script>
 </head>
 <body>
   <aside class="sidebar" id="sidebar">
@@ -19,10 +19,19 @@
     <header class="topbar"><button class="icon-button mobile-menu" id="menuButton" aria-label="Mở danh mục">☰</button><div class="breadcrumb">Không gian Big Wave <span>/</span> <b id="breadcrumb">Tất cả dự án</b></div><div class="top-actions"><button class="quiet-button" id="exportButton">Xuất ghi chú <span>↗</span></button><button class="avatar" id="infoButton" aria-label="Thông tin thư viện">BW</button></div></header>
     <main id="main">
       <section class="heading"><div class="eyebrow"><span></span> BỘ SƯU TẬP CỦA BẠN</div><div class="heading-row"><div><h1 id="pageTitle">Tất cả dự án</h1><p id="pageSubtitle">Một nơi để tìm, xem và quản lý các bản LadiPage.</p></div><button class="primary-button" id="archivesButton"><span>↓</span> Tải bộ file gốc</button></div></section>
+      <section class="keyword-search" id="keywordSearch" aria-labelledby="searchLabel">
+        <label id="searchLabel" for="search">Tìm kiếm từ khóa</label>
+        <form id="searchForm" role="search">
+          <div class="keyword-input"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Nhập tên người, dự án, ngành nghề hoặc nội dung cần tìm…" aria-describedby="searchHelp" autocomplete="off"><button type="button" id="clearSearch" aria-label="Xóa từ khóa" hidden>×</button><kbd>/</kbd></div>
+          <button type="submit" class="primary-button">Tìm kiếm <span aria-hidden="true">→</span></button>
+        </form>
+        <p id="searchHelp">Tìm theo tên, mã dự án, hạng mục, nội dung trang web và ghi chú. Gõ không dấu vẫn tìm được.</p>
+        <div class="keyword-suggestions" id="searchSuggestions"><span>Thử tìm:</span><button type="button" data-keyword="Lê Hiếu Nghĩa">Lê Hiếu Nghĩa</button><button type="button" data-keyword="GAINS">GAINS</button><button type="button" data-keyword="Piano">Piano</button><button type="button" data-keyword="Coaching">Coaching</button><button type="button" data-keyword="Sự kiện">Sự kiện</button></div>
+      </section>
       <section class="stats" aria-label="Thống kê thư viện"><div><span class="stat-label">Dự án trong thư viện</span><strong id="projectCount">—</strong><small>Giữ riêng các phiên bản khác nhau</small></div><div><span class="stat-label">Trang web khôi phục</span><strong id="webCount">—</strong><small id="relatedCount">Đang đối chiếu với file gốc</small></div><div><span class="stat-label">Hạng mục</span><strong>08</strong><small>Tìm nhanh theo mục đích sử dụng</small></div><div><span class="stat-label">Gói dữ liệu</span><strong>02<em> / 3 ZIP</em></strong><small>Hai ZIP trùng nhau đã được gộp</small></div></section>
       <section class="workspace" id="workspace">
         <div class="tabs-row"><div class="tabs" role="tablist" aria-label="Loại nội dung"><button class="tab active" id="projectsTab" role="tab" aria-selected="true">Dự án <span id="projectsTabCount">199</span></button><button class="tab" id="webTab" role="tab" aria-selected="false">Trang web <span id="webTabCount">126</span></button></div><div class="view-toggle"><button class="icon-button active" id="gridButton" aria-label="Xem dạng thẻ" aria-pressed="true">▦</button><button class="icon-button" id="listButton" aria-label="Xem dạng danh sách" aria-pressed="false">☷</button></div></div>
-        <div class="toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Tìm tên, người, từ khóa hoặc tên file…" aria-label="Tìm dự án"><kbd>/</kbd></label><select id="statusFilter" aria-label="Lọc theo trạng thái"><option value="all">Tất cả trạng thái</option><option value="related">Có bản web liên quan</option><option value="source">Chỉ có file gốc</option><option value="notes">Có ghi chú</option></select><select id="archiveFilter" aria-label="Lọc theo gói ZIP"><option value="all">Tất cả gói ZIP</option><option value="A">Gói A · 100 bản</option><option value="B">Gói B · 99 bản</option></select><select id="sort" aria-label="Sắp xếp"><option value="category">Theo hạng mục</option><option value="name">Tên A → Z</option><option value="favorite">Yêu thích trước</option><option value="size">Dung lượng lớn trước</option></select></div>
+        <div class="toolbar"><select id="statusFilter" aria-label="Lọc theo trạng thái"><option value="all">Tất cả trạng thái</option><option value="related">Có bản web liên quan</option><option value="source">Chỉ có file gốc</option><option value="notes">Có ghi chú</option></select><select id="archiveFilter" aria-label="Lọc theo gói ZIP"><option value="all">Tất cả gói ZIP</option><option value="A">Gói A · 100 bản</option><option value="B">Gói B · 99 bản</option></select><select id="sort" aria-label="Sắp xếp"><option value="category">Theo hạng mục</option><option value="name">Tên A → Z</option><option value="favorite">Yêu thích trước</option><option value="size">Dung lượng lớn trước</option></select></div>
         <div class="results-bar"><span id="resultCount">Đang tải thư viện…</span><button class="text-button" id="resetButton" hidden>Xóa bộ lọc</button><span class="legend"><i></i> Có bản web liên quan <i></i> Chỉ có file gốc</span></div>
         <div class="catalog-grid" id="catalog" aria-live="polite"></div>
         <div class="pagination" id="pagination"></div>
